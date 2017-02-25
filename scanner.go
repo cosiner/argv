@@ -25,21 +25,21 @@ func (s *Scanner) envs() map[string]string {
 	return s.env
 }
 
-const _RUNE_EOF = 0
+const _RuneEOF = 0
 
 func (s *Scanner) nextRune() rune {
 	if s.rpos >= len(s.text) {
-		return _RUNE_EOF
+		return _RuneEOF
 	}
 
 	r := s.text[s.rpos]
-	s.rpos += 1
+	s.rpos++
 	return r
 }
 
 func (s *Scanner) unreadRune(r rune) {
-	if r != _RUNE_EOF {
-		s.rpos -= 1
+	if r != _RuneEOF {
+		s.rpos--
 	}
 }
 
@@ -84,11 +84,16 @@ type Token struct {
 }
 
 const (
-	TOK_STRING       TokenType = iota + 1 // string, single quoted string and double quoted string
-	TOK_PIPE                              // '|'
-	TOK_REVERSEQUOTE                      // reverse quoted string
-	TOK_SPACE                             // space characters
-	TOK_EOF                               // input end
+	// TokString for string, single quoted string and double quoted string
+	TokString TokenType = iota + 1
+	// TokPipe is the '|' character
+	TokPipe
+	// TokReversequote is reverse quoted string
+	TokReversequote
+	// TokSpace represent space character sequence
+	TokSpace
+	// TokEOF means the input end.
+	TokEOF
 )
 
 func (s *Scanner) getEnv(name string) string {
@@ -139,87 +144,87 @@ func (s *Scanner) checkDollarEnd(tok *Token, r rune, from, switchTo uint8) uint8
 // Error is returned for invalid syntax such as unpaired quotes.
 func (s *Scanner) Next() (Token, error) {
 	const (
-		INITIAL = iota + 1
-		SPACE
-		REVERSE_QUOTE
-		STRING
-		STRING_DOLLAR
-		STRING_QUOTE_SINGLE
-		STRING_QUOTE_DOUBLE
-		STRING_QUOTE_DOUBLE_DOLLAR
+		Initial = iota + 1
+		Space
+		ReverseQuote
+		String
+		StringDollar
+		StringQuoteSingle
+		StringQuoteDouble
+		StringQuoteDoubleDollar
 	)
 
 	var (
 		tok Token
 
-		state uint8 = INITIAL
+		state uint8 = Initial
 	)
 	s.dollarBuf = s.dollarBuf[:0]
 	for {
 		r := s.nextRune()
 		switch state {
-		case INITIAL:
+		case Initial:
 			switch {
-			case r == _RUNE_EOF:
-				tok.Type = TOK_EOF
+			case r == _RuneEOF:
+				tok.Type = TokEOF
 				return tok, nil
 			case r == '|':
-				tok.Type = TOK_PIPE
+				tok.Type = TokPipe
 				return tok, nil
 			case r == '`':
-				state = REVERSE_QUOTE
+				state = ReverseQuote
 			case unicode.IsSpace(r):
-				state = SPACE
+				state = Space
 				s.unreadRune(r)
 			default:
-				state = STRING
+				state = String
 				s.unreadRune(r)
 			}
-		case SPACE:
-			if r == _RUNE_EOF || !unicode.IsSpace(r) {
+		case Space:
+			if r == _RuneEOF || !unicode.IsSpace(r) {
 				s.unreadRune(r)
-				tok.Type = TOK_SPACE
+				tok.Type = TokSpace
 				return tok, nil
 			}
-		case REVERSE_QUOTE:
+		case ReverseQuote:
 			switch r {
-			case _RUNE_EOF:
+			case _RuneEOF:
 				return tok, ErrInvalidSyntax
 			case '`':
-				tok.Type = TOK_REVERSEQUOTE
+				tok.Type = TokReversequote
 				return tok, nil
 			default:
 				tok.Value = append(tok.Value, r)
 			}
-		case STRING:
+		case String:
 			switch {
-			case r == _RUNE_EOF || r == '|' || r == '`' || unicode.IsSpace(r):
-				tok.Type = TOK_STRING
+			case r == _RuneEOF || r == '|' || r == '`' || unicode.IsSpace(r):
+				tok.Type = TokString
 				s.unreadRune(r)
 				return tok, nil
 			case r == '\'':
-				state = STRING_QUOTE_SINGLE
+				state = StringQuoteSingle
 			case r == '"':
-				state = STRING_QUOTE_DOUBLE
+				state = StringQuoteDouble
 			case r == '\\':
 				nr := s.nextRune()
-				if nr == _RUNE_EOF {
+				if nr == _RuneEOF {
 					return tok, ErrInvalidSyntax
 				}
 				tok.Value = append(tok.Value, nr)
 			case r == '$':
-				state = s.checkDollarStart(&tok, r, state, STRING_DOLLAR)
+				state = s.checkDollarStart(&tok, r, state, StringDollar)
 			default:
 				tok.Value = append(tok.Value, r)
 			}
-		case STRING_DOLLAR:
-			state = s.checkDollarEnd(&tok, r, state, STRING)
-		case STRING_QUOTE_SINGLE:
+		case StringDollar:
+			state = s.checkDollarEnd(&tok, r, state, String)
+		case StringQuoteSingle:
 			switch r {
-			case _RUNE_EOF:
+			case _RuneEOF:
 				return tok, ErrInvalidSyntax
 			case '\'':
-				state = STRING
+				state = String
 			case '\\':
 				nr := s.nextRune()
 				if escape, ok := s.isEscapeChars(nr); ok {
@@ -231,15 +236,15 @@ func (s *Scanner) Next() (Token, error) {
 			default:
 				tok.Value = append(tok.Value, r)
 			}
-		case STRING_QUOTE_DOUBLE:
+		case StringQuoteDouble:
 			switch r {
-			case _RUNE_EOF:
+			case _RuneEOF:
 				return tok, ErrInvalidSyntax
 			case '"':
-				state = STRING
+				state = String
 			case '\\':
 				nr := s.nextRune()
-				if nr == _RUNE_EOF {
+				if nr == _RuneEOF {
 					return tok, ErrInvalidSyntax
 				}
 				if escape, ok := s.isEscapeChars(nr); ok {
@@ -249,12 +254,12 @@ func (s *Scanner) Next() (Token, error) {
 					s.unreadRune(nr)
 				}
 			case '$':
-				state = s.checkDollarStart(&tok, r, state, STRING_QUOTE_DOUBLE_DOLLAR)
+				state = s.checkDollarStart(&tok, r, state, StringQuoteDoubleDollar)
 			default:
 				tok.Value = append(tok.Value, r)
 			}
-		case STRING_QUOTE_DOUBLE_DOLLAR:
-			state = s.checkDollarEnd(&tok, r, state, STRING_QUOTE_DOUBLE)
+		case StringQuoteDoubleDollar:
+			state = s.checkDollarEnd(&tok, r, state, StringQuoteDouble)
 		}
 	}
 }
@@ -269,7 +274,7 @@ func Scan(text []rune, env map[string]string) ([]Token, error) {
 			return nil, err
 		}
 		tokens = append(tokens, tok)
-		if tok.Type == TOK_EOF {
+		if tok.Type == TokEOF {
 			break
 		}
 	}

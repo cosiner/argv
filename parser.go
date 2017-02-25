@@ -81,17 +81,17 @@ func (p *Parser) cmdline() error {
 	if err != nil {
 		return err
 	}
-	if tok.Type == TOK_EOF {
+	if tok.Type == TokEOF {
 		return nil
 	}
-	if !p.accept(tok.Type, TOK_PIPE) {
+	if !p.accept(tok.Type, TokPipe) {
 		return ErrInvalidSyntax
 	}
 	return p.cmdline()
 }
 
 func (p *Parser) section() error {
-	leftSpace, err := p.optional(TOK_SPACE)
+	leftSpace, err := p.optional(TokSpace)
 	if err != nil {
 		return err
 	}
@@ -126,7 +126,7 @@ func (p *Parser) spacedSection() (u unit, err error) {
 	if err != nil {
 		return
 	}
-	u.rightSpace, err = p.optional(TOK_SPACE)
+	u.rightSpace, err = p.optional(TokSpace)
 	return
 }
 
@@ -157,7 +157,7 @@ func (p *Parser) unit() (Token, error) {
 	if err != nil {
 		return tok, err
 	}
-	if p.accept(tok.Type, TOK_STRING, TOK_REVERSEQUOTE) {
+	if p.accept(tok.Type, TokString, TokReversequote) {
 		return tok, nil
 	}
 	p.unreadToken(tok)
@@ -190,7 +190,7 @@ func (p *Parser) appendUnit(leftSpace bool, u unit) error {
 		p.currStr = p.currStr[:0]
 	}
 	for _, tok := range u.toks {
-		if tok.Type == TOK_REVERSEQUOTE {
+		if tok.Type == TokReversequote {
 			val, err := p.r(tok.Value, p.s.envs())
 			if err != nil {
 				return err
