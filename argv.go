@@ -1,58 +1,34 @@
-// Package argv parse command line string into arguments array.
-//
-// Support backslash '\' and quotes ''' and '"'.
+// Package argv parse command line string into arguments array using the bash syntax.
 package argv
 
 import "strings"
 
-// Argv parse command line string into arguments array.
-func Argv(str string) []string {
-	var (
-		argv []string
-		curr []rune
-
-		skip        = -1
-		prev        rune
-		prevSpecial bool
-	)
-	for i, r := range str {
-		if i <= skip {
-			continue
-		}
-
-		var isSpecial bool
-		if prev != '\\' || !prevSpecial {
-			switch r {
-			case '"', '\'':
-				nextIndex := strings.IndexRune(str[i+1:], r)
-				if nextIndex >= 0 {
-					isSpecial = true
-
-					skip = i + nextIndex + 1
-					curr = append(curr, []rune(str[i+1:skip])...)
-				}
-			case '\\':
-				isSpecial = true
-			case ' ':
-				isSpecial = true
-				if prev != ' ' || !prevSpecial {
-					isSpecial = true
-					if len(curr) > 0 {
-						argv = append(argv, string(curr))
-						curr = curr[:0]
-					}
-				}
+// ParseEnv parsing environment variables as key/value pair.
+//
+// Item will be ignored if one of the key and value is empty.
+func ParseEnv(env []string) map[string]string {
+	var m map[string]string
+	for _, e := range env {
+		secs := strings.SplitN(e, "=", 2)
+		if len(secs) == 2 {
+			key := strings.TrimSpace(secs[0])
+			val := strings.TrimSpace(secs[1])
+			if key == "" || val == "" {
+				continue
 			}
+			if m == nil {
+				m = make(map[string]string)
+			}
+			m[key] = val
 		}
-		if !isSpecial {
-			curr = append(curr, r)
-		}
-		prev = r
-		prevSpecial = isSpecial
 	}
+	return m
+}
 
-	if len(curr) > 0 {
-		argv = append(argv, string(curr))
-	}
-	return argv
+// Argv split cmdline string as array of argument array by the '|' character.
+//
+// The parsing rules is same as bash. The environment variable will be replaced
+// and string surround by '`' will be passed to reverse quote parser.
+func Argv(cmdline []rune, env map[string]string, reverseQuoteParser ReverseQuoteParser) ([][]string, error) {
+	return NewParser(NewScanner(cmdline, env), reverseQuoteParser).Parse()
 }
