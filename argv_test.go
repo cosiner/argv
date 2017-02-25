@@ -16,10 +16,10 @@ func TestArgv(t *testing.T) {
 		{
 			Input: " a | a|a |a`ls ~/``ls /` ",
 			Sections: [][]string{
-				[]string{"a"},
-				[]string{"a"},
-				[]string{"a"},
-				[]string{"als ~/ls /"},
+				{"a"},
+				{"a"},
+				{"a"},
+				{"als ~/ls /"},
 			},
 		},
 		{
