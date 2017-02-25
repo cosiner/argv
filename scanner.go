@@ -2,6 +2,9 @@ package argv
 
 import "unicode"
 
+// Scanner is a cmdline string scanner.
+//
+// It split cmdline string to tokens: space, string, pipe, reverse quote string.
 type Scanner struct {
 	env map[string]string
 
@@ -10,6 +13,7 @@ type Scanner struct {
 	dollarBuf []rune
 }
 
+// NewScanner create a scanner and init it's internal states.
 func NewScanner(text []rune, env map[string]string) *Scanner {
 	return &Scanner{
 		text: text,
@@ -17,8 +21,7 @@ func NewScanner(text []rune, env map[string]string) *Scanner {
 	}
 }
 
-func (s *Scanner) Env() map[string]string {
-
+func (s *Scanner) envs() map[string]string {
 	return s.env
 }
 
@@ -129,6 +132,9 @@ func (s *Scanner) checkDollarEnd(tok *Token, r rune, from, switchTo uint8) uint8
 	return state
 }
 
+// Next return next token, if it reach the end, TOK_EOF will be returned.
+//
+// Error is returned for invalid syntax such as unpaired quotes.
 func (s *Scanner) Next() (Token, error) {
 	const (
 		INITIAL = iota + 1
@@ -251,6 +257,7 @@ func (s *Scanner) Next() (Token, error) {
 	}
 }
 
+// Scan is a utility function help split input text as tokens.
 func Scan(text []rune, env map[string]string) ([]Token, error) {
 	s := NewScanner(text, env)
 	var tokens []Token

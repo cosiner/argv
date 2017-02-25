@@ -3,8 +3,11 @@ package argv
 import "errors"
 
 type (
+	// ReverseQuoteParser parse strings quoted by '`' and return it's result. Commonly,
+	// it should run it os command.
 	ReverseQuoteParser func([]rune, map[string]string) ([]rune, error)
 
+	// Parser take tokens from Scanner, and do syntax checking, and generate the splitted arguments array.
 	Parser struct {
 		s      *Scanner
 		tokbuf []Token
@@ -18,6 +21,7 @@ type (
 	}
 )
 
+// NewParser create a cmdline string parser.
 func NewParser(s *Scanner, r ReverseQuoteParser) *Parser {
 	if r == nil {
 		r = func(r []rune, env map[string]string) ([]rune, error) {
@@ -42,6 +46,7 @@ func (p *Parser) nextToken() (Token, error) {
 }
 
 var (
+	// ErrInvalidSyntax was reported if there is a syntax error in command line string.
 	ErrInvalidSyntax = errors.New("invalid syntax")
 )
 
@@ -49,11 +54,14 @@ func (p *Parser) unreadToken(tok Token) {
 	p.tokbuf = append(p.tokbuf, tok)
 }
 
-// Cmdline = Section [ Pipe Cmdline ]
-// Section = [Space] SpacedSection { SpacedSection }
-// SpacedSection = MultipleUnit [Space]
-// MultipleUnit = Unit {Unit}
-// Unit = String | ReverseQuote
+// Parse split command line string into arguments array.
+//
+// EBNF:
+//   Cmdline = Section [ Pipe Cmdline ]
+//   Section = [Space] SpacedSection { SpacedSection }
+//   SpacedSection = MultipleUnit [Space]
+//   MultipleUnit = Unit {Unit}
+//   Unit = String | ReverseQuote
 func (p *Parser) Parse() ([][]string, error) {
 	err := p.cmdline()
 	if err != nil {
@@ -183,7 +191,7 @@ func (p *Parser) appendUnit(leftSpace bool, u unit) error {
 	}
 	for _, tok := range u.toks {
 		if tok.Type == TOK_REVERSEQUOTE {
-			val, err := p.r(tok.Value, p.s.Env())
+			val, err := p.r(tok.Value, p.s.envs())
 			if err != nil {
 				return err
 			}

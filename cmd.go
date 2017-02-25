@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// Run execute cmdline string and return the output
 func Run(cmdline []rune, env map[string]string) ([]rune, error) {
 	args, err := Argv(cmdline, env, Run)
 	if err != nil {
@@ -25,6 +26,7 @@ func Run(cmdline []rune, env map[string]string) ([]rune, error) {
 	return []rune(str), err
 }
 
+// Cmds generate exec.Cmd for each command.
 func Cmds(args [][]string) ([]*exec.Cmd, error) {
 	var cmds []*exec.Cmd
 	for _, argv := range args {
@@ -37,6 +39,8 @@ func Cmds(args [][]string) ([]*exec.Cmd, error) {
 	return cmds, nil
 }
 
+// Pipe pipe previous command's stdout to next command's stdin, if in or
+// out is nil, it will be ignored.
 func Pipe(in io.Reader, out io.Writer, cmds ...*exec.Cmd) error {
 	l := len(cmds)
 	if l == 0 {
