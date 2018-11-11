@@ -26,7 +26,7 @@ func Run(cmdline []rune, env map[string]string) ([]rune, error) {
 	return []rune(str), err
 }
 
-// Cmds generate exec.Cmd for each command.
+// Cmds generate exec.Command for each command.
 func Cmds(args [][]string) ([]*exec.Cmd, error) {
 	var cmds []*exec.Cmd
 	for _, argv := range args {
