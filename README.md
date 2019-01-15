@@ -21,7 +21,7 @@ func TestArgv(t *testing.T) {
 	    []string{"ls", "/"},
 	    []string{"wc", "-l"},
 	}
-	if !reflect.DeepDqual(args, expects) {
+	if !reflect.DeepEqual(args, expects) {
 	    t.Fatal(args)
 	}
 }
