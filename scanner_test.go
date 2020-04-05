@@ -12,16 +12,11 @@ var (
 		 a| a|a
 		 a"\A" a"\a\b\f\n\r\t\v\\\$" \t a'\A' a'\t'` +
 		" a`ls /` `ls ~`"
-	env = ParseEnv([]string{
-		"PATH=/bin",
-		"*=a",
-	})
 )
 
 func TestScanner(t *testing.T) {
 	gots, err := Scan(
-		[]rune(parseText),
-		env,
+		parseText,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -32,21 +27,29 @@ func TestScanner(t *testing.T) {
 		{Type: TokSpace},
 		{Type: TokString, Value: []rune("aa")},
 		{Type: TokSpace},
-		{Type: TokString, Value: []rune("aaa")},
+		{Type: TokString, Value: []rune("a")},
+		{Type: TokStringSingleQuote, Value: []rune("aa")},
 		{Type: TokSpace},
-		{Type: TokString, Value: []rune("aaaa")},
-		{Type: TokSpace},
-		{Type: TokString, Value: []rune("a/bin")},
-		{Type: TokSpace},
-		{Type: TokString, Value: []rune("a/bin")},
+		{Type: TokString, Value: []rune("a")},
+		{Type: TokStringDoubleQuote, Value: []rune("aa")},
+		{Type: TokString, Value: []rune("a")},
 		{Type: TokSpace},
 		{Type: TokString, Value: []rune("a$PATH")},
 		{Type: TokSpace},
-		{Type: TokString, Value: []rune("aa")},
+		{Type: TokString, Value: []rune("a")},
+		{Type: TokStringDoubleQuote, Value: []rune("$PATH")},
 		{Type: TokSpace},
 		{Type: TokString, Value: []rune("a")},
+		{Type: TokStringSingleQuote, Value: []rune("$PATH")},
 		{Type: TokSpace},
-		{Type: TokString, Value: []rune("a$\\")},
+		{Type: TokString, Value: []rune("a")},
+		{Type: TokStringDoubleQuote, Value: []rune("$*")},
+		{Type: TokSpace},
+		{Type: TokString, Value: []rune("a")},
+		{Type: TokStringDoubleQuote, Value: []rune("$0")},
+		{Type: TokSpace},
+		{Type: TokString, Value: []rune("a")},
+		{Type: TokStringDoubleQuote, Value: []rune("$\\")},
 		{Type: TokSpace},
 		{Type: TokString, Value: []rune("a")},
 		{Type: TokPipe},
@@ -55,20 +58,24 @@ func TestScanner(t *testing.T) {
 		{Type: TokPipe},
 		{Type: TokString, Value: []rune("a")},
 		{Type: TokSpace},
-		{Type: TokString, Value: []rune("a\\A")},
+		{Type: TokString, Value: []rune("a")},
+		{Type: TokStringDoubleQuote, Value: []rune("\\A")},
 		{Type: TokSpace},
-		{Type: TokString, Value: []rune("a\a\b\f\n\r\t\v\\$")},
+		{Type: TokString, Value: []rune("a")},
+		{Type: TokStringDoubleQuote, Value: []rune("\a\b\f\n\r\t\v\\$")},
 		{Type: TokSpace},
 		{Type: TokString, Value: []rune("t")},
 		{Type: TokSpace},
-		{Type: TokString, Value: []rune("a\\A")},
-		{Type: TokSpace},
-		{Type: TokString, Value: []rune("a\t")},
+		{Type: TokString, Value: []rune("a")},
+		{Type: TokStringSingleQuote, Value: []rune("\\A")},
 		{Type: TokSpace},
 		{Type: TokString, Value: []rune("a")},
-		{Type: TokReversequote, Value: []rune("ls /")},
+		{Type: TokStringSingleQuote, Value: []rune("\t")},
 		{Type: TokSpace},
-		{Type: TokReversequote, Value: []rune("ls ~")},
+		{Type: TokString, Value: []rune("a")},
+		{Type: TokBackQuote, Value: []rune("ls /")},
+		{Type: TokSpace},
+		{Type: TokBackQuote, Value: []rune("ls ~")},
 		{Type: TokEOF},
 	}
 	if len(gots) != len(expects) {
@@ -90,7 +97,7 @@ func TestScanner(t *testing.T) {
 	for _, text := range []string{
 		`a"`, `a'`, `a"\`, "`ls ~", `a\`,
 	} {
-		_, err := Scan([]rune(text), nil)
+		_, err := Scan(text)
 		if err != ErrInvalidSyntax {
 			t.Errorf("expect unexpected eof error, but got: %v", err)
 		}

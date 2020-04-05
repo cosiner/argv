@@ -1,7 +1,6 @@
 package argv
 
 import (
-	"os"
 	"reflect"
 	"testing"
 )
@@ -40,10 +39,11 @@ func TestArgv(t *testing.T) {
 		},
 	}
 	for i, c := range cases {
-		gots, err := Argv([]rune(c.Input), nil, nil)
+		gots, err := Argv(c.Input, func(s string) (string, error) {
+			return s, nil
+		}, nil)
 		if err != c.Error {
 			t.Errorf("test failed: %d, expect error:%s, but got %s", i, c.Error, err)
-
 		}
 		if err != nil {
 			continue
@@ -53,9 +53,4 @@ func TestArgv(t *testing.T) {
 			t.Errorf("parse failed %d, expect: %v, got %v", i, c.Sections, gots)
 		}
 	}
-}
-
-func TestRun(t *testing.T) {
-	output, err := Run([]rune("echo / | wc -l"), ParseEnv(os.Environ()))
-	t.Log(string(output), err)
 }
