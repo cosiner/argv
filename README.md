@@ -13,16 +13,18 @@ Documentation can be found at [Godoc](https://godoc.org/github.com/cosiner/argv)
 # Example
 ```Go
 func TestArgv(t *testing.T) {
-	args, err := argv.Argv([]rune(" ls   `echo /`   |  wc  -l "), argv.ParseEnv(os.Environ()), argv.Run)
+    args, err := Argv(" ls   `echo /`   |  wc  -l ", func(backquoted string) (string, error) {
+		return backquoted, nil
+	}, nil)
 	if err != nil {
-	    t.Fatal(err)
+		t.Fatal(err)
 	}
 	expects := [][]string{
-	    []string{"ls", "/"},
-	    []string{"wc", "-l"},
+		[]string{"ls", "echo /"},
+		[]string{"wc", "-l"},
 	}
 	if !reflect.DeepEqual(args, expects) {
-	    t.Fatal(args)
+		t.Fatal(args)
 	}
 }
 ```

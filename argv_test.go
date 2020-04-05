@@ -54,3 +54,19 @@ func TestArgv(t *testing.T) {
 		}
 	}
 }
+
+func TestArgv2(t *testing.T) {
+	args, err := Argv(" ls   `echo /`   |  wc  -l ", func(backquoted string) (string, error) {
+		return backquoted, nil
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expects := [][]string{
+		[]string{"ls", "echo /"},
+		[]string{"wc", "-l"},
+	}
+	if !reflect.DeepEqual(args, expects) {
+		t.Fatal(args)
+	}
+}
