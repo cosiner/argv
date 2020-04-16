@@ -19,7 +19,7 @@ func Cmds(args ...[]string) ([]*exec.Cmd, error) {
 	return cmds, nil
 }
 
-func Pipe(stdin io.Reader, stdout, stderr io.Writer, cmds ...*exec.Cmd) error {
+func Start(stdin io.Reader, stdout, stderr io.Writer, cmds ...*exec.Cmd) error {
 	if stdin == nil {
 		stdin = os.Stdin
 	}
@@ -56,6 +56,13 @@ func Pipe(stdin io.Reader, stdout, stderr io.Writer, cmds ...*exec.Cmd) error {
 		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
+func Pipe(stdin io.Reader, stdout, stderr io.Writer, cmds ...*exec.Cmd) error {
+	err := Start(stdin, stdout, stderr, cmds...)
+	if err != nil {
+		return err
 	}
 	for i := range cmds {
 		err = cmds[i].Wait()
